@@ -20,6 +20,7 @@ The flow is as follow:
     7. You can test the local algorithms in the prueba tab.
 
 Architecture:
+    
     Front end: 
         We use this module to interact with the system, this module uses Jinja2 integrating with Flask.
         This module has 4 tabs: index, home, profile, test, registry
