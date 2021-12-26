@@ -1,0 +1,17 @@
+body, html {
+    height: 100%;
+}
+  
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.container-center {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-flow: wrap;
+    height: 100%;
+    margin-left: 10%;
+}

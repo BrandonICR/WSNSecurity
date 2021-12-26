@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container">
+        <div class="row">
+            <div class="col-1">
+            </div>
+            <div class="col-3 mt-3" style="background-color: rgb(117, 245, 117);">
+                <p style="text-align: center; color: black; margin-top: 10px; font-weight: bold; font-size: larger;">
+                    Texto Plano</p>
+            </div>
+            <div class="col-1"></div>
+            <div class="col-3 mt-3" style="background-color: rgb(250, 93, 93);">
+                <p style="text-align: center; color: black; margin-top: 10px; font-weight: bold; font-size: larger;">
+                    Texto Cifrado</p>
+            </div>
+            <div class="col-1"></div>
+            <div class="col-3 mt-3" style="background-color: rgb(236, 209, 87);">
+                <p style="text-align: center; color: black; margin-top: 10px; font-weight: bold; font-size: larger;">
+                    Texto Descifrado</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-1">
+                {% if context['algorithm'] == 'AES' %}
+                <div class="row mt-5">
+                    <button id="btn-aes" class="btn btn-primary" onclick="changeAlgorithm('AES');">AES 128</button>
+                </div>
+                {% endif %}
+                {% if context['algorithm'] == 'TRIVIUM' %}
+                <div class="row mt-5">
+                    <button id="btn-trivium" class="btn btn-warning"
+                        onclick="changeAlgorithm('TRIVIUM');">Trivium</button>
+                </div>
+                {% endif %}
+                <div class="row mt-5" style="display: none;">
+                    <p><strong>Algoritmo Detectado:</strong></p>
+                </div>
+                <div class="row mt" style="display: none;">
+                    <p><i id="algorithm-name" style="font-family: Verdana, Geneva, Tahoma, sans-serif;">
+                        {% if context['algorithm'] != '' %} {{ context['algorithm'] }} {% endif %}
+                    </i></p>
+                </div>
+            </div>
+            <div class="col-3 mt-3">
+                <div class="card border-success mb-3" style="max-width: 18rem; height: 28rem;">
+                    <textarea id="input-plaintext" class="input-plaintext"
+                        style="border: 0px; outline: none; height: 27rem; resize: none;" maxlength="128"
+                        onkeyup="onChangePlaintextLimited();"></textarea>
+                    <select name="type_input" id="type_input" class="custom-select mr-sm-2"
+                        onchange="onSelectEncoding();onChangePlaintextLimited();">
+                        <option value="hex">hexadecimal</option>
+                        <option value="latin 1" selected>latin 1</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-1"></div>
+            <div class="col-3 mt-3">
+                <div id="ciphertext" class="card border-danger mb-3" style="max-width: 18rem; height: 28rem;">
+                </div>
+                <p style="font-size: small;"><strong><em>Último cifrado: </em></strong><i id="date">...</i></p>
+            </div>
+            <div class="col-1"></div>
+            <div class="col-3 mt-3">
+                <div id="plaintext-decrypt" class="card border-warning mb-3" style="max-width: 18rem; height: 28rem;">
+                </div>
+                <p style="font-size: small;"><strong><em>IV actual: </em></strong><i id="iv"></i></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-1"></div>
+            <div class="col-3">
+                <button type="button" class="btn btn-outline-danger" onclick="encryptAction();">Cifrar</button>
+            </div>
+            <div class="col-1"></div>
+            <div class="col-3">
+                <button type="button" class="btn btn-outline-warning" onclick="decryptAction();">Descifrar</button>
+            </div>
+            <div class="col-1"></div>
+            <div class="col-3">
+                <p style="font-size: small;"><strong><em>KEY actual: </em></strong><i id="key"></i></p>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block myScripts %}
+    <script>
+        var context = JSON.parse('{{ context|tojson }}');
+
+        document.getElementById("alert-button-success").removeEventListener('click', this);
+
+        if (context['uart_status'] == true)
+            document.getElementById("uart-status").value = 'CONEXIÓN EXITOSA ' + context['algorithm'];
+        
+        if (context['currentIV'])
+            document.getElementById("iv").innerHTML = context['currentIV'];
+        
+        if (context['currentKey'])
+            document.getElementById("key").innerHTML = context['currentKey'];
+
+        var algorithm = 'AES';
+        var encoding = 'latin 1';
+
+        document.getElementById("date").innerHTML = context.lastCipher;
+        document.getElementById("input-plaintext").value = context.lastPlainText;
+        document.getElementById("ciphertext").innerHTML = context.lastCipherText;
+        document.getElementById("plaintext-decrypt").innerHTML = context.lastDecryptCiphertext;
+        document.getElementById("li-nav-home").setAttribute("class","nav-item active");
+
+        function changeAlgorithm(selectedAlgorithm) {
+            algorithm = selectedAlgorithm;
+            document.getElementById("algorithm-name").innerHTML = algorithm;
+            setMaxLengthPlaintext();
+        }
+
+        function onSelectEncoding() {
+            encoding = document.getElementById("type_input").value;
+            document.getElementById("input-plaintext").value = '';
+            setMaxLengthPlaintext();
+        }
+
+        function onChangePlaintextLimited() {
+            var writedPlaintext = document.getElementById("input-plaintext").value;
+            var index = 0;
+            if(encoding == 'hex'){
+                writedPlaintext = writedPlaintext.replace(/[^0-9abcdefABCDEF]+/,"");
+                document.getElementById("input-plaintext").value = writedPlaintext;
+                while (index != -1 && encoding == 'hex') {
+                    index = writedPlaintext.indexOf("14", index);
+                    if (index >= 0 && index % 2 == 0) {
+                        document.getElementById("input-plaintext").value = writedPlaintext.substring(0, index).concat(writedPlaintext.substring(index + 2, writedPlaintext.length));
+                        break;
+                    }
+                    if (index == -1) break;
+                    index += 1;
+                }
+            }
+        }
+
+        function setMaxLengthPlaintext() {
+            var lengthInputText = '128';
+            if (algorithm == 'AES' && encoding == 'hex')
+                lengthInputText = '256';
+            if (algorithm == 'TRIVIUM' && encoding == 'latin 1')
+                lengthInputText = '96';
+            if (algorithm == 'TRIVIUM' && encoding == 'hex')
+                lengthInputText = '192';
+            document.getElementById("input-plaintext").setAttribute('maxlength', lengthInputText);
+            document.getElementById("input-plaintext").value = document.getElementById("input-plaintext").value.substring(0, parseInt(lengthInputText));
+        }
+
+        function encryptAction() {
+            var data = document.getElementById("input-plaintext");
+            document.getElementById("ciphertext").innerHTML = '';
+            document.getElementById("plaintext-decrypt").innerHTML = '';
+            if (data.value.length==0||(data.value.length%2!=0&&'hex'==document.getElementById("type_input").value)){
+                showAlertDanger('Mensaje no válido');
+                return;
+            }
+            var formData = new FormData();
+            formData.append("encoding", document.getElementById("type_input").value);
+            formData.append("plaintext", data.value);
+            formData.append("algorithm", algorithm);
+            var request = new XMLHttpRequest();
+            request.open("POST", "/cifrar");
+            request.onreadystatechange = function (aEvt) {
+                if (request.readyState == 4) {
+                    if (request.status == 200) {
+                        var msg = JSON.parse(request.responseText);
+                        console.log(msg);
+                        if (msg.error == 'FAIL')
+                            showAlertDanger('No hay comunicación con el dispositivo...');
+                        else{
+                            document.getElementById("ciphertext").innerHTML = msg.ciphertext;
+                            document.getElementById("date").innerHTML = msg.date;
+                        }
+                    } else
+                        showAlertDanger("Error al realizar la peticion");
+                }
+            };
+            request.send(formData);
+        }
+
+        function decryptAction() {
+            var request = new XMLHttpRequest();
+            request.open("POST", "/decifrar");
+            request.onreadystatechange = function (aEvt) {
+                if (request.readyState == 4) {
+                    if (request.status == 200) {
+                        document.getElementById("plaintext-decrypt").innerHTML = request.responseText;
+                    } else
+                        showAlertDanger("Error al realizar la peticion");
+                }
+            };
+            request.send(null);
+        }
+
+        function testConnectionUART() {
+            var request = new XMLHttpRequest();
+            request.open("POST", "/test");
+            document.getElementById("uart-status").value += '...';
+            request.onreadystatechange = function (aEvt) {
+                if (request.readyState == 4) {
+                    if (request.status == 200) {
+                        var msg = JSON.parse(request.responseText);
+                        console.log(msg);
+                        if (msg == 'FAIL') {
+                            context['uart_status'] = false;
+                            context['algorithm'] = '';
+                            showAlertDanger('No hay comunicación con el dispositivo...');
+                            document.getElementById("uart-status").value = 'CONEXIÓN FALLIDA';
+                        } else {
+                            context['algorithm'] = msg.algorithm;
+                            algorithm = msg.algorithm;
+                            document.getElementById("algorithm-name").innerHTML = msg.algorithm;
+                            setMaxLengthPlaintext();
+                            context['uart_status'] = true;
+                            showAlertSuccess('Dispositivo conectado...');
+                            document.getElementById("uart-status").value = 'CONEXIÓN EXITOSA ' + msg.algorithm;
+                            document.getElementById("iv").innerHTML = msg.currentIV;
+                            document.getElementById("alert-button-success").addEventListener('click', ()=>{window.location.reload();} );
+                        }
+                    } else
+                        showAlertDanger("Error al realizar la peticion");
+                }
+            };
+            request.send(null);
+        }
+    </script>
+{% endblock %}

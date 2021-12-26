@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-3" style="font-size: larger; font-weight: bold; text-align: center;">Fecha</div>
+            <div class="col-3" style="font-size: larger; font-weight: bold; text-align: center;">Mensaje</div>
+            <div class="col-3" style="font-size: larger; font-weight: bold; text-align: center;">Texto Cifrado</div>
+            <div class="col-3" style="font-size: larger; font-weight: bold; text-align: center;">Texto Descifrado</div>
+        </div>
+
+        {% for registro in registry %}
+        <hr>
+        <div class="row">
+            <div class="col-3" style="font-size: medium; text-align: center;">{{ registro['fecha'] }}</div>
+            <div class="col-3" style="font-size: medium; word-break: break-all;">{{ registro['msg'] }}</div>
+            <div class="col-3" style="font-size: medium; word-break: break-all;">{{ registro['ciphertext'] }}</div>
+            <div class="col-3" style="font-size: medium; word-break: break-all;">{{ registro['plaintext'] }}</div>
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}
+
+{% block myScripts %}
+    <script>
+        document.getElementById("li-nav-registro").setAttribute("class","nav-item active");
+        document.getElementById("form-uart-test").remove();
+    </script>
+{% endblock %}

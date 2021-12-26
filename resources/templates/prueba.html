@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-md-center">
+        <div class="col-auto">
+            <p style="color: black; font-size: x-large; font-weight: bold; align-content: center;">
+                {% if context['algorithm'] == 'AES' %}
+                    AES
+                {% else %}
+                    TRIVIUM
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    <div class="row justify-content-md-center">
+        {% if context['algorithm'] == 'AES' %}
+            <div class="col-4">
+                <div class="card border-secondary">
+                    <div class="card-body text-secondary">
+                        <h5 class="card-title">AES 128 CBC</h5>
+                        <p></p>
+                        <form>
+                            <div class="form-group">
+                                <label for="keyAES" style="align-content: center;">Llave</label>
+                                <input type="text" name="keyAES" id="keyAES" class="form-control" maxlength="32"
+                                    minlength="32">
+                            </div>
+                            <div class="form-group">
+                                <label for="ivAES" style="align-content: center;">IV</label>
+                                <input type="text" name="ivAES" id="ivAES" class="form-control" maxlength="32"
+                                    minlength="32">
+                            </div>
+                            <div class="form-group">
+                                <label for="plaintextAES" style="align-content: center;">Texto Plano</label>
+                                <input type="text" name="plaintextAES" id="plaintextAES" class="form-control" maxlength="128"
+                                    minlength="128">
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="testAes();">Cifrar</button>
+                        </form>
+                        <p></p>
+                        <p>Texto Cifrado: <Strong id="ciphertextAES"></Strong></p>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="col-4">
+                <div class="card border-secondary">
+                    <div class="card-body text-secondary">
+                        <h5 class="card-title">TRIVIUM</h5>
+                        <p></p>
+                        <form>
+                            <div class="form-group">
+                                <label for="keyTRIVIUM" style="align-content: center;">Llave</label>
+                                <input type="text" name="keyTRIVIUM" id="keyTRIVIUM" class="form-control" maxlength="20"
+                                    minlength="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="ivTRIVIUM" style="align-content: center;">IV</label>
+                                <input type="text" name="ivTRIVIUM" id="ivTRIVIUM" class="form-control" maxlength="20"
+                                    minlength="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="plaintextTRIVIUM" style="align-content: center;">Texto Plano</label>
+                                <input type="text" name="plaintextTRIVIUM" id="plaintextTRIVIUM" class="form-control" maxlength="128"
+                                    minlength="128">
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="testTrivium();">Cifrar</button>
+                        </form>
+                        <p></p>
+                        <p>Texto Cifrado: <Strong id="ciphertextTRIVIUM"></Strong></p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        <div class="col-4">
+            <div class="card border-secondary">
+                <div class="card-body text-secondary">
+                    <h5 class="card-title">Valores de Último Cifrado</h5>
+                    <p></p>
+                    <p style="display: none;">Algoritmo conectado: <Strong id="algorithmCurrent"></Strong></p>
+                    <p></p>
+                    <p>Llave: <Strong id="keyCurrent"></Strong></p>
+                    <p></p>
+                    <p>IV: <Strong id="ivCurrent"></Strong></p>
+                    <p></p>
+                    <p>Texto Plano: <Strong id="plaintextCurrent"></Strong></p>
+                    <p></p>
+                    <p>Texto Cifrado: <Strong id="ciphertextCurrent"></Strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block myScripts %}
+<script>
+    document.getElementById("li-nav-prueba").setAttribute("class", "nav-item active");
+    document.getElementById("form-uart-test").remove();
+    var context = JSON.parse('{{ context|tojson }}');
+    document.getElementById('algorithmCurrent').innerHTML = context['algorithm'];
+    document.getElementById('keyCurrent').innerHTML = context['currentKey'];
+    document.getElementById('ivCurrent').innerHTML = context['currentIV'];
+    document.getElementById('plaintextCurrent').innerHTML = context['lastPlainText'];
+    document.getElementById('ciphertextCurrent').innerHTML = context['lastCipherText'];
+
+    function testAes() {
+        var key = document.getElementById("keyAES");
+        var iv = document.getElementById("ivAES");
+        var plaintext= document.getElementById("plaintextAES");
+        if(key.value.length != 32 || key.value.length != 32 || plaintext.value.length < 2){
+            showAlertDanger("Parametros invalidos al cifrar Trivium");
+            return;
+        }
+        var formData = new FormData();
+        formData.append("algorithm", "AES");
+        formData.append("key", key.value);
+        formData.append("iv", iv.value);
+        formData.append("plaintext", plaintext.value);
+        var request = new XMLHttpRequest();
+        request.open("POST", "/test_algorithm");
+        request.onreadystatechange = function (aEvt) {
+            if (request.readyState == 4) {
+                if (request.status == 200) {
+                    var msg = request.responseText;
+                    console.log(msg);
+                    document.getElementById("ciphertextAES").innerHTML = msg;
+                } else
+                    showAlertDanger("Error al realizar la peticion");
+            }
+        };
+        request.send(formData);
+    }
+
+    function testTrivium() {
+        var key = document.getElementById("keyTRIVIUM");
+        var iv = document.getElementById("ivTRIVIUM");
+        var plaintext= document.getElementById("plaintextTRIVIUM");
+        if(key.value.length != 20 || key.value.length != 20 || plaintext.value.length < 2){
+            showAlertDanger("Parametros invalidos al cifrar Trivium");
+            return;
+        }
+        var formData = new FormData();
+        formData.append("algorithm", "TRIVIUM");
+        formData.append("key", key.value);
+        formData.append("iv", iv.value);
+        formData.append("plaintext", plaintext.value);
+        var request = new XMLHttpRequest();
+        request.open("POST", "/test_algorithm");
+        request.onreadystatechange = function (aEvt) {
+            if (request.readyState == 4) {
+                if (request.status == 200) {
+                    var msg = request.responseText;
+                    console.log(msg);
+                    document.getElementById("ciphertextTRIVIUM").innerHTML = msg;
+                } else
+                    showAlertDanger("Error al realizar la peticion");
+            }
+        };
+        request.send(formData);
+    }
+
+</script>
+{% endblock %}

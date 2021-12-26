@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/css/mystile.css">
+    <title>WSNSecurity</title>
+</head>
+<body style="background-image: url('../static/images/ia.gif'); background-repeat: no-repeat; background-size: 100% 100%;">
+    <div class="container-center">
+        <div class="containe">
+            <div class="row">
+                <p style="font-size: xx-large; font-family: Verdana, Geneva, Tahoma, sans-serif; color: white; font-weight: bold;">WSNSecurity</p>
+            </div>
+            <div class="row">
+                <div class="card border-primary mb-3" style="max-width: 18rem; opacity: 0.9;">
+                    <div class="card-header" style="font-size: x-large; background-color: white;"><strong>Iniciar Sesión</strong></div>
+                    <div class="card-body">
+                        <form action="/login" method="POST">
+                            <div class="form-group">
+                                <label for="username" style="font-weight: bold;">Usuario</label>
+                                <input type="text" class="form-control" id="username" name="username"
+                                    placeholder="Ingresa el usuario...">
+                            </div>
+                            <div class="form-group">
+                                <label for="password" style="font-weight: bold;">Contraseña</label>
+                                <input type="password" class="form-control" id="password" name="password"
+                                    placeholder="Ingresa la contraseña...">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Ingresar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="../static/js/bootstrap.min.js"></script>
+</html>

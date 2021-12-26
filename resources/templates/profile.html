@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-auto">
+                <p style="color: black; font-size: x-large; font-weight: bold; align-content: center;">
+                    {% if context['algorithm'] == 'AES' %}
+                        AES
+                    {% elif context['algorithm' == 'TRIVIUM'] %}
+                        TRIVIUM
+                    {% endif %}
+                </p>
+                <div class="card border-secondary mb-3" style="max-width: 18rem;">
+                    <div class="card-body text-secondary">
+                        <h5 class="card-title">Cambiar Llave de Cifrado</h5>
+                        <p></p>
+                        <form>
+                            <select id="algorithm" class="custom-select mr-sm-2" style="display: none;">
+                                <option value="AES">AES</option>
+                                <option value="TRIVIUM">TRIVIUM</option>
+                            </select>
+                            <div class="form-group">
+                                <input type="text" name="key" id="key" class="form-control" maxlength="32"
+                                    minlength="32" onkeyup="onChangePlaintextLimited();" placeholder="Llave en formato hexadecimal">
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="validateForm();">Cambiar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block myScripts %}
+    <script>
+        var context = JSON.parse('{{ context|tojson }}');
+        
+        document.getElementById("alert-button-success").removeEventListener('click', this);
+
+        document.getElementById("algorithm").value = context['algorithm'];
+
+        console.log("Value:"+document.getElementById("algorithm").value);
+        console.log("Context:"+context['algorithm']);
+
+        onSelectAlgorithm(context['algorithm']);
+
+        document.getElementById("li-nav-profile").setAttribute("class","nav-item active");
+
+        if (context['uart_status']) {
+            document.getElementById("uart-status").value = 'SUCCESS CONNECTION ' + context['algorithm'];
+        }
+
+        function validateLengthKey(){
+            var bolean = false;
+            if(document.getElementById("algorithm").value == "AES")
+                bolean = document.getElementById("key").value.length == 32;
+            else if(document.getElementById("algorithm").value == "TRIVIUM")
+                bolean = document.getElementById("key").value.length == 20;
+            return bolean;
+        }
+
+        function validateForm() {
+            console.log("Value:"+document.getElementById("algorithm").value);
+            console.log("Context:"+context['algorithm']);
+            var boolean = context['uart_status'] && document.getElementById("algorithm").value == context['algorithm'] && validateLengthKey();
+            if (!boolean) {
+                var mensajeAlert = 'Formulario no válido:';
+                if(!validateLengthKey()) mensajeAlert += ' Longitud no valida :';
+                if (!context['uart_status']) mensajeAlert += ' Dispositivo no disponible :';
+                if (!(document.getElementById("algorithm").value == context['algorithm'])) mensajeAlert += ' Algoritmo no valido :';
+                showAlertDanger(mensajeAlert);
+            } else
+                sendFormChangeKey();
+        }
+
+        function onChangePlaintextLimited() {
+            var writedKey = document.getElementById("key").value;
+            writedKey = writedKey.replace(/[^0-9abcdefABCDEF]+/,"");
+            document.getElementById("key").value = writedKey;
+        }
+
+        function sendFormChangeKey() {
+            var algorithm = document.getElementById("algorithm").value;
+            var key = document.getElementById("key").value;
+            console.log("Algorithm:"+algorithm);
+            console.log("Key:"+key);
+            var formData = new FormData();
+            formData.append("algorithm", algorithm);
+            formData.append("key", key);
+            var request = new XMLHttpRequest();
+            request.open("POST", "/change_key");
+            request.onreadystatechange = function (aEvt) {
+                if (request.readyState == 4) {
+                    if (request.status == 200) {
+                        var msg = request.responseText;
+                        console.log(msg);
+                        if (msg == 'FAIL')
+                            showAlertDanger('Error al modificar la llave...');
+                        else
+                            showAlertSuccess('¡Llave modificada con éxito!');
+                    } else
+                        showAlertDanger("Error al realizar la peticion");
+                }
+            };
+            request.send(formData);
+        }
+
+        function onSelectAlgorithm(algorithm) {
+            var lengthInputKey = (algorithm == "AES") ? "32" : "20";
+            if (!context['uart_status'])
+                showAlertDanger('No esta conectado el dispositivo');
+            document.getElementById("key").setAttribute("maxlength", lengthInputKey);
+            document.getElementById("key").setAttribute("minLength", lengthInputKey);
+            document.getElementById("key").value = document.getElementById("key").value.substring(0, parseInt(lengthInputKey));
+        }
+
+        function testConnectionUART() {
+            var request = new XMLHttpRequest();
+            request.open("POST", "/test");
+            document.getElementById("uart-status").value += '...';
+            request.onreadystatechange = function (aEvt) {
+                if (request.readyState == 4) {
+                    if (request.status == 200) {
+                        var msg = request.responseText;
+                        console.log(msg);
+                        if (msg == 'FAIL') {
+                            context['uart_status'] = false;
+                            context['algorithm'] = '';
+                            showAlertDanger('No hay comunicación con el dispositivo...');
+                            document.getElementById("uart-status").value = 'FAIL CONNECTION';
+                        } else {
+                            context['uart_status'] = true;
+                            context['algorithm'] = msg;
+                            onSelectAlgorithm(msg);
+                            showAlertSuccess('Dispositivo conectado...');
+                            document.getElementById("uart-status").value = 'SUCCESS CONNECTION ' + msg;
+                            document.getElementById("alert-button-success").addEventListener('click', ()=>{window.location.reload();} );
+                        }
+                    } else
+                        showAlertDanger("Error al realizar la peticion");
+                }
+            };
+            request.send(null);
+        }
+
+    </script>
+{% endblock %}
